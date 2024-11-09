@@ -1,0 +1,210 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Initial teleport to position -8, 15, -5
+if character and character:FindFirstChild("HumanoidRootPart") then
+    character.HumanoidRootPart.CFrame = CFrame.new(-8, 15, -5)
+end
+
+-- Equip Glove "Titan" (First Execution)
+for i, v in pairs(game.ReplicatedStorage._NETWORK:GetChildren()) do
+    if v.ClassName == "RemoteEvent" then
+        v:FireServer("Titan")
+    end
+end
+
+-- Wait 0.001 seconds and execute Transform
+task.wait(0.001)
+local args = { [1] = "Transform" }
+game:GetService("ReplicatedStorage").GeneralAbility:FireServer(unpack(args))
+
+-- Wait another 0.001 seconds and re-equip "Titan"
+task.wait(0.001)
+for i, v in pairs(game.ReplicatedStorage._NETWORK:GetChildren()) do
+    if v.ClassName == "RemoteEvent" then
+        v:FireServer("Titan")
+    end
+end
+
+-- Wait 0.001 seconds and equip "Diamond"
+task.wait(0.001)
+for i, v in pairs(game.ReplicatedStorage._NETWORK:GetChildren()) do
+    if v.ClassName == "RemoteEvent" then
+        v:FireServer("Diamond")
+    end
+end
+
+-- Wait 0.5 seconds and activate Rockmode
+task.wait(0.5)
+game:GetService("ReplicatedStorage").Rockmode:FireServer()
+
+-- Wait 2.5 seconds and activate Rockmode again
+task.wait(2.5)
+game:GetService("ReplicatedStorage").Rockmode:FireServer()
+
+-- Wait 1.2 seconds, then teleport to position -6, 22, -2 and set walk speed to 45
+task.wait(1.2)
+character = player.Character or player.CharacterAdded:Wait()
+if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+    character.HumanoidRootPart.CFrame = CFrame.new(-6, 22, -2)
+    character.Humanoid.WalkSpeed = 45
+end
+task.wait(5)
+-- REAPLACE GLOVE NAME WITH GLOVE U WANNA EQUIP CASE SENSITIVE!!
+for i, v in pairs (game.ReplicatedStorage._NETWORK:GetChildren()) do if v.ClassName == "RemoteEvent" then
+v:FireServer("Plague")
+end
+end
+task.wait(2)
+-- Create ScreenGui and button
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Create circular button positioned on the right side of the screen
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 75, 0, 75)
+button.Position = UDim2.new(1, -85, 0.5, -37.5)  -- Positioned 10 pixels from the right edge, centered vertically
+button.AnchorPoint = Vector2.new(0.5, 0.5)
+button.BackgroundColor3 = Color3.new(0, 0, 0) -- Black background
+button.TextColor3 = Color3.new(1, 1, 1) -- White text color
+button.Text = "E"
+button.Font = Enum.Font.SourceSans
+button.TextScaled = true
+button.Parent = screenGui
+
+-- Create circular shape and white frame
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent = button
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Thickness = 2
+uiStroke.Color = Color3.new(1, 1, 1) -- White frame
+uiStroke.Parent = button
+
+-- Slap Aura and Animation Setup
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local slapDistance = 100
+local slapCooldown = 0.585
+local lastSlapTime = 0
+local slapEnabled = false -- Start with slap aura disabled
+local selectedRemote = "PlagueHit" -- Use PlagueHit remote
+
+-- Load the animation for auto-play
+local autoPlayAnimation = Instance.new("Animation")
+autoPlayAnimation.AnimationId = "rbxassetid://15775758181" -- Auto-play Animation ID
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local autoPlayTrack = humanoid:LoadAnimation(autoPlayAnimation)
+
+-- Load the slap aura animation
+local slapAnimation = Instance.new("Animation")
+slapAnimation.AnimationId = "rbxassetid://109511274923523" -- Slap aura Animation ID
+local slapTrack = humanoid:LoadAnimation(slapAnimation)
+
+-- Auto-play the animation when script is executed
+autoPlayTrack:Play()
+
+-- Function to slap closest player
+local function slapClosestPlayer()
+    if not slapEnabled then return end
+
+    local closestPlayer = nil
+    local closestDistance = slapDistance
+
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local playerPosition = player.Character.HumanoidRootPart.Position
+
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local otherPlayerPosition = otherPlayer.Character.HumanoidRootPart.Position
+                local distance = (playerPosition - otherPlayerPosition).Magnitude
+
+                if distance <= closestDistance then
+                    closestDistance = distance
+                    closestPlayer = otherPlayer
+                end
+            end
+        end
+
+        if closestPlayer and tick() - lastSlapTime >= slapCooldown then
+            lastSlapTime = tick()
+            if closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
+                local head = closestPlayer.Character.Head
+                local args = {head}
+                local remote = ReplicatedStorage:FindFirstChild(selectedRemote)
+                if remote then
+                    remote:FireServer(unpack(args))
+                else
+                    warn("Remote not found:", selectedRemote)
+                end
+            end
+        end
+    end
+end
+
+-- Enable slap aura temporarily and play slap animation when button is clicked
+button.MouseButton1Click:Connect(function()
+    -- Enable slap aura for 0.3 seconds
+    slapEnabled = true
+    slapTrack:Play() -- Play the slap aura animation
+
+    -- Disable slap aura after 0.3 seconds
+    task.delay(0.3, function()
+        slapEnabled = false
+        slapTrack:Stop() -- Stop the slap aura animation when aura disables
+    end)
+end)
+
+-- Continuously check for closest player if slap aura is enabled
+RunService.RenderStepped:Connect(function()
+    if slapEnabled then
+        slapClosestPlayer()
+    end
+end)
+
+-- Create ScreenGui and button
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Create circular "Stats" button positioned slightly inward on the left side
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 75, 0, 75)
+button.Position = UDim2.new(0, 25, 0.5, -37.5) -- Adjusted inward by 25 pixels from the left edge
+button.AnchorPoint = Vector2.new(0.5, 0.5)
+button.BackgroundColor3 = Color3.new(0, 0, 0) -- Black background
+button.TextColor3 = Color3.new(1, 1, 1) -- White text color
+button.Text = "T"
+button.Font = Enum.Font.SourceSans
+button.TextScaled = true
+button.Parent = screenGui
+
+-- Create circular shape and white frame for the button
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent = button
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Thickness = 2
+uiStroke.Color = Color3.new(1, 1, 1) -- White frame
+uiStroke.Parent = button
+
+-- Teleport Function
+local function teleportInFacingDirection()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoidRootPart then
+        -- Teleport 20 studs in the direction the character is facing
+        humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.new(0, 0, -20)
+    end
+end
+
+-- Button click functionality to teleport the player in facing direction
+button.MouseButton1Click:Connect(teleportInFacingDirection)
